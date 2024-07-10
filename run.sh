@@ -1,21 +1,11 @@
-# ----------------------------------------------------------------------------- start
-docker-compose up
+# Install poetry if it's not already installed
+pip install poetry
 
-# ----------------------------------------------------------------------------- stop
-docker-compose down
+# Install the dependencies and create a virtual environment
+poetry install
 
-docker stop $(docker ps -a -q)
-docker rm $(docker ps -a -q)
-docker rmi $(docker images -q)
+# Activate the virtual environment created by poetry
+source $(poetry env info --path)/bin/activate  # On Windows use `$(poetry env info --path)\Scripts\activate`
 
-yes | docker container prune
-yes | docker image prune
-yes | docker volume prune
-yes | docker network prune
-yes | docker system prune
-
-docker ps --all
-docker images
-docker system df
-docker volume ls
-docker network ls
+# Run  script
+python src/lstm_auto_complete.py

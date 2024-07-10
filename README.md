@@ -31,7 +31,11 @@ ___
 ## How to run
 
 ### Raw
-The 
+Just run:  
+
+```
+sh runh.sh
+```
 
 ### Docker
 For reproducibility, this project is been offered in a containerized version as well. 
