@@ -21,3 +21,23 @@
 ⠀⠀⠠⠾⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠶⠶⢷⣤⠀⠀⠀⠀
               LSTM
 ```
+
+
+
+# Next Word Predictor
+
+___
+
+## How to run
+
+### Raw
+The 
+
+### Docker
+For reproducibility, this project is been offered in a containerized version as well. 
+In order to run it in a container, all you need to do is run: 
+
+
+```
+docker-compose up
+```
