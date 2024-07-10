@@ -287,7 +287,7 @@ if __name__ == '__main__':
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
     # load latest checkpoint if desired
-    if(args.checkpoint):
+    if(args.checkpoint == 'false'):
         checkpoint_path = find_latest_checkpoint_path(args.checkpoint_path)
         print(f"Loading latest checkpoint: {checkpoint_path}")
         checkpoint = torch.load(checkpoint_path)
@@ -323,13 +323,17 @@ if __name__ == '__main__':
             all_losses.append(loss.item())
 
             #save checkpoint
-            checkpoint_path = os.path.join(args.checkpoint_path, f"checkpoint_epoch_{epoch+1}.pt")
+            checkpoint_file_path = os.path.join(args.checkpoint_path, f"checkpoint_epoch_{epoch+1}.pt")
+
+            if not os.path.exists(args.checkpoint_path):
+                os.makedirs(args.checkpoint_path)
+
             torch.save({
                 'epoch': epoch + 1,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-            }, checkpoint_path)
-            print(f"Checkpoint saved at {checkpoint_path}")
+            }, checkpoint_file_path)
+            print(f"Checkpoint saved at {checkpoint_file_path}")
 
 
     epoch_list = [i for i in range(1, epochs, 5)]
