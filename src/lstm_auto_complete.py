@@ -26,9 +26,11 @@ torch.manual_seed(seed)
 np.random.seed(seed)
 
 data_path = Path('../data/The_critique_of_pure_reason_short.txt')
+data_path_similar = Path('../data/Perpetual_Peace_Kant.txt')
+data_path_not_similar = Path('../data/moby_dick.txt')
 
-def load_text():
-    with open(data_path, 'r') as file:
+def load_text(data_path_in):
+    with open(data_path_in, 'r') as file:
             file_content = file.read()
 
     # Filtering out invalid symbols
@@ -146,6 +148,43 @@ def use_model(input_list):
         output_list.append(sentence)
     return output_list
 
+"""
+Function which evaluates a given text corpus on a model
+"""
+def evaluate_model_on_corpus(data_path, model, tokenizer, features_vocab, target_vocab):
+
+    # load text
+    df = load_text(data_path)
+
+    # tokenize
+    tokenized_sentences = [tokenizer(sentence) for sentence in df]
+
+    # create ngrams
+    ngrams_list = []
+    for tokenized_sentence in tokenized_sentences:
+        ngrams_list.extend(make_cumulative_ngrams(tokenized_sentence))
+
+    # convert to numerical sequences
+    input_sequences = [text_to_numerical_sequence_test(sequence) for sequence in ngrams_list if
+                       text_to_numerical_sequence_test(sequence)]
+
+    X = [sequence[:-1] for sequence in input_sequences]
+    y = [sequence[-1] for sequence in input_sequences]
+
+    #pad sequences
+    longest_sequence_feature = max(len(sequence) for sequence in X)
+    padded_X = [F.pad(torch.tensor(sequence), (longest_sequence_feature - len(sequence), 0), value=0) for sequence in X]
+    padded_X = torch.stack(padded_X)
+    y = torch.tensor(y)
+    y_one_hot = one_hot(y, num_classes=len(target_vocab))
+
+    data = TensorDataset(padded_X, y_one_hot)
+    data_loader = DataLoader(data, batch_size=32, shuffle=False)
+
+    accuracy = calculate_topk_accuracy(model, data_loader)
+    print(f'Test K-Accuracy for {data_path.name}: {accuracy * 100:.2f}%')
+    return accuracy
+
 class nextWord_LSTM(nn.Module):
     def __init__(self, features_vocab_total_words, target_vocab_total_words, embedding_dim, hidden_dim):
         super(nextWord_LSTM, self).__init__()
@@ -167,7 +206,7 @@ if __name__ == '__main__':
     mlflow.set_tracking_uri('http://127.0.0.1:5000')
     mlflow.start_run()
 
-    df = load_text()
+    df = load_text(data_path)
     tokenizer = get_tokenizer('basic_english')
     tokenized_sentences = [tokenizer(title) for title in df]
 
@@ -304,12 +343,24 @@ if __name__ == '__main__':
 
     accuracy = calculate_topk_accuracy(model, test_loader)
     print(f'Test K-Accuracy: {accuracy * 100:.2f}%')
-    mlflow.log_metric('test_k_accuracy', accuracy)
+    mlflow.log_metric('test_k_accuracy_same_corpus', accuracy)
 
     #input_test = [['Daniel is',5],['stand', 5], ['deep learning is', 5], ['data cleaning', 4], ['6 ways', 4], ['you did a', 2]]
     input_test = [['Daniel is', 9]]
 
     outputs_model = use_model(input_test)
     print(outputs_model)
+
+
+    input_test = [['Dominik is', 9]]
+    input_test2 = [['Daniel is', 9]]
+
+    outputs_model = use_model(input_test)
+    print(outputs_model)
+    outputs_model = use_model(input_test2)
+    print(outputs_model)
+
+    mlflow.log_metric('test_k_accuracy_similar_corpus', evaluate_model_on_corpus(data_path_similar, model, tokenizer, features_vocab, target_vocab))
+    mlflow.log_metric('test_k_accuracy_different_corpus', evaluate_model_on_corpus(data_path_not_similar, model, tokenizer, features_vocab, target_vocab))
 
     mlflow.end_run()  # End MLflow run
