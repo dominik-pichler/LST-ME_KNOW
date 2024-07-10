@@ -5,8 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f97f4309-aaee-48b9-b6ba-e397cec1823b" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/makefile" beforeDir="false" afterPath="$PROJECT_DIR$/makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/Perpetual_Peace_Kant.txt" beforeDir="false" afterPath="$PROJECT_DIR$/data/Perpetual_Peace_Kant.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -123,7 +122,7 @@
       <workItem from="1720198872524" duration="8080000" />
       <workItem from="1720263860517" duration="21967000" />
       <workItem from="1720361267451" duration="432000" />
-      <workItem from="1720609088127" duration="7263000" />
+      <workItem from="1720609088127" duration="7703000" />
     </task>
     <task id="LOCAL-00001" summary="Update README.md&#10;&#10;(cherry picked from commit 5b269d46bfb471c52efd9768df786f8ec6ee0fca)">
       <option name="closed" value="true" />
@@ -159,14 +158,14 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/lstm_auto_complete.py</url>
-          <line>238</line>
+          <line>264</line>
           <option name="timeStamp" value="21" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/LST_ME_KNOW$lstm_auto_complete.coverage" NAME="lstm_auto_complete Coverage Results" MODIFIED="1720615185434" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/LST_ME_KNOW$lstm_auto_complete.coverage" NAME="lstm_auto_complete Coverage Results" MODIFIED="1720617421792" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
     <SUITE FILE_PATH="coverage/LST_ME_KNOW$x_lstm_auto_complete.coverage" NAME="x_lstm_auto_complete Coverage Results" MODIFIED="1720281150182" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
   </component>
 </project>
