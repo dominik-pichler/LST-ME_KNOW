@@ -38,6 +38,7 @@ For reproducibility, this project is been offered in a containerized version as 
 In order to run it in a container, all you need to do is run: 
 
 
+
 ```
-docker-compose up
+docker-compose up 
 ```
