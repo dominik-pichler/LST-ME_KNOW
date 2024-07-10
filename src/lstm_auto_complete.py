@@ -26,7 +26,7 @@ seed = 42
 torch.manual_seed(seed)
 np.random.seed(seed)
 
-data_path = Path('../data/The_critique_of_pure_reason_full.txt')
+data_path = Path('../data/The_critique_of_pure_reason_short.txt')
 
 def load_text():
     with open(data_path, 'r') as file:
@@ -359,6 +359,17 @@ if __name__ == '__main__':
                 'optimizer_state_dict': optimizer.state_dict(),
             }, checkpoint_file_path)
             print(f"Checkpoint saved at {checkpoint_file_path}")
+
+
+    checkpoint_file_path = os.path.join(args.checkpoint_path, "checkpoint_model_final.pt")
+
+    if not os.path.exists(args.checkpoint_path):
+        os.makedirs(args.checkpoint_path)
+
+    torch.save({
+        'model_state_dict': model.state_dict(),
+    }, checkpoint_file_path)
+    print(f"Checkpoint saved at {checkpoint_file_path}")
 
 
     epoch_list = [i for i in range(1, epochs, 5)]
