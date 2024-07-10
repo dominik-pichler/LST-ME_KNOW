@@ -1,7 +1,3 @@
-''''
-Resources:
-# https://www.kaggle.com/code/dota2player/next-word-prediction-with-lstm-pytorch/notebook
-'''
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -22,6 +18,7 @@ import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings("ignore")
 
+# Config
 seed = 42
 torch.manual_seed(seed)
 np.random.seed(seed)
@@ -38,7 +35,7 @@ def load_text():
     pattern = re.compile(r'\[\d+\]')
     file_content = pattern.sub('', file_content)
 
-    # getting rid of empty lines:
+    # Getting rid of empty lines:
     lines = file_content.split('\n')
     non_empty_lines = [line for line in lines if line.strip() != '']
     cleaned_text = '\n'.join(non_empty_lines)
@@ -77,8 +74,8 @@ def text_to_numerical_sequence(tokenized_text):
 
     :param tokenized_text:
     :type tokenized_text:
-    :return:
-    :rtype:
+    :return:list of tokens
+    :rtype: list or none
     '''
 
 
@@ -98,13 +95,13 @@ def make_cumulative_ngrams(tokenized_sentences):
     Creates cumulative n-grams based on tokenized_sentences.
 
     Example:
-        data = ['my', 'name', 'is', 'Ahmed']
-        Ngram = [['my', 'name'], ['my', 'name', 'is'], ['my', 'name', 'is', 'Ahmed']]
+        data = ['my', 'name', 'is', 'Dominik']
+        Ngram = [['my', 'name'], ['my', 'name', 'is'], ['my', 'name', 'is', 'Dominik']]
 
     :param tokenized_sentences:
     :type tokenized_sentences:
-    :return:
-    :rtype:
+    :return: list of cumulative n-grams
+    :rtype: list
     '''
     list_ngrams = []
     for i in range(1, len(tokenized_sentences)):
@@ -118,14 +115,14 @@ def add_random_oov_tokens(cumulative_ngram):
     to improve the model's robustness and generalization ability.
     :param ngram:
     :type ngram:
-    :return:
-    :rtype:
+    :return: list of n-grams
+    :rtype: list
     '''
 
-    for idx, word in enumerate(ngram[:-1]):
+    for idx, word in enumerate(cumulative_ngram[:-1]):
         if random.uniform(0, 1) < 0.1:
-            ngram[idx] = '<oov>'
-    return ngram
+            cumulative_ngram[idx] = '<oov>'
+    return cumulative_ngram
 
 
 
@@ -167,7 +164,6 @@ def find_latest_checkpoint_path(checkpoint_path_dir):
     latest_checkpoint = f"checkpoint_epoch_{latest_epoch}.pt"
 
     return os.path.join(checkpoint_path_dir, latest_checkpoint)
-
 
 """
 returns parameters from command line with set default parameters
