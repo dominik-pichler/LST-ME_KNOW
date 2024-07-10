@@ -1,11 +1,28 @@
-FROM --platform=linux/amd64 ubuntu:latest
+FROM ubuntu:20.04
 
-RUN apt-get update && apt-get install -y git python3 python3-pip
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    python3 \
+    python3-pip \
+    curl && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir --break-system-packages \
-    numpy pandas \
-    matplotlib seaborn \
-    torch torchvision torchaudio torchtext \
-    tqdm
+# Install Poetry
+RUN curl -sSL https://install.python-poetry.org | python3 - && \
+    ln -s /root/.local/bin/poetry /usr/local/bin/poetry
 
-CMD ["python3", "./src/autocomplete.py"]
+# Set the working directory
+WORKDIR /app
+
+# Copy Poetry files
+COPY pyproject.toml poetry.lock ./
+
+# Install dependencies
+RUN poetry install --no-root
+
+# Copy the rest of the application code
+COPY . .
+
+# Specify the command to run the application
+CMD ["poetry", "run", "python3", "./src/lstm_auto_complete.py"]

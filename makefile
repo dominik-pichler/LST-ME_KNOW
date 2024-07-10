@@ -37,6 +37,12 @@ up:
 	git commit -m "up"
 	git push
 
+upm:
+	git pull
+	git add .
+	git commit -m "${m}"
+	git push
+
 reqs:
 	pip install pipreqs
 	rm -rf requirements.txt

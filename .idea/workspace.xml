@@ -5,7 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f97f4309-aaee-48b9-b6ba-e397cec1823b" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/makefile" beforeDir="false" afterPath="$PROJECT_DIR$/makefile" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -122,7 +123,7 @@
       <workItem from="1720198872524" duration="8080000" />
       <workItem from="1720263860517" duration="21967000" />
       <workItem from="1720361267451" duration="432000" />
-      <workItem from="1720609088127" duration="6928000" />
+      <workItem from="1720609088127" duration="7263000" />
     </task>
     <task id="LOCAL-00001" summary="Update README.md&#10;&#10;(cherry picked from commit 5b269d46bfb471c52efd9768df786f8ec6ee0fca)">
       <option name="closed" value="true" />
