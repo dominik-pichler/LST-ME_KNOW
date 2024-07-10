@@ -1,8 +1,9 @@
 artifact_uri: mlflow-artifacts:/0/9a5729d3aaf24497a544a75a0a243695/artifacts
+deleted_time: 1720646989751
 end_time: 1720625600641
 entry_point_name: ''
 experiment_id: '0'
-lifecycle_stage: active
+lifecycle_stage: deleted
 run_id: 9a5729d3aaf24497a544a75a0a243695
 run_name: fun-stag-307
 run_uuid: 9a5729d3aaf24497a544a75a0a243695

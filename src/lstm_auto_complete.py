@@ -126,7 +126,7 @@ def get_params():
 def text_to_numerical_sequence_test(tokenized_text):
     tokens_list = []
     for token in tokenized_text:
-        num_token = features_vocab[token] if token in features_vocab.get_itos() else features_vocab['<oov>']
+        num_token = features_vocab[token] if token in features_vocab.get_() else features_vocab['<oov>']
         tokens_list.append(num_token)
     return tokens_list
 
@@ -151,32 +151,43 @@ def use_model(input_list):
 """
 Function which evaluates a given text corpus on a model
 """
-def evaluate_model_on_corpus(data_path, model, tokenizer, features_vocab, target_vocab):
 
-    # load text
+def evaluate_model_on_corpus(data_path, model, tokenizer, features_vocab, target_vocab):
+    # Load text
     df = load_text(data_path)
 
-    # tokenize
+    # Tokenize
     tokenized_sentences = [tokenizer(sentence) for sentence in df]
 
-    # create ngrams
+    # Create ngrams
     ngrams_list = []
     for tokenized_sentence in tokenized_sentences:
         ngrams_list.extend(make_cumulative_ngrams(tokenized_sentence))
 
-    # convert to numerical sequences
-    input_sequences = [text_to_numerical_sequence_test(sequence) for sequence in ngrams_list if
-                       text_to_numerical_sequence_test(sequence)]
+    # Convert to numerical sequences using the training vocabulary
+    input_sequences = [text_to_numerical_sequence_test_big_bro(sequence, features_vocab, target_vocab) for sequence in ngrams_list if text_to_numerical_sequence_test_big_bro(sequence, features_vocab, target_vocab)]
 
     X = [sequence[:-1] for sequence in input_sequences]
     y = [sequence[-1] for sequence in input_sequences]
 
-    #pad sequences
+    # Pad sequences
     longest_sequence_feature = max(len(sequence) for sequence in X)
     padded_X = [F.pad(torch.tensor(sequence), (longest_sequence_feature - len(sequence), 0), value=0) for sequence in X]
     padded_X = torch.stack(padded_X)
     y = torch.tensor(y)
-    y_one_hot = one_hot(y, num_classes=len(target_vocab))
+
+    # Print out the maximum class value and num_classes
+    max_class_value = max(y)
+    num_classes = len(target_vocab)
+    print(f"Max class value: {max_class_value}, Num classes: {num_classes}")
+
+    # Ensure class values are within num_classes
+    if max_class_value >= num_classes:
+        print(y.tolist())
+        print(target_vocab)
+        raise ValueError(f"Class value {max_class_value} exceeds number of classes {num_classes}")
+
+    y_one_hot = one_hot(y, num_classes=num_classes)
 
     data = TensorDataset(padded_X, y_one_hot)
     data_loader = DataLoader(data, batch_size=32, shuffle=False)
@@ -184,6 +195,19 @@ def evaluate_model_on_corpus(data_path, model, tokenizer, features_vocab, target
     accuracy = calculate_topk_accuracy(model, data_loader)
     print(f'Test K-Accuracy for {data_path.name}: {accuracy * 100:.2f}%')
     return accuracy
+
+# Convert to numerical sequences using the training vocabulary
+def text_to_numerical_sequence_test_big_bro(tokenized_text, features_vocab, target_vocab):
+    tokens_list = []
+    for token in tokenized_text:
+        if token in target_vocab.get_stoi():
+            num_token = target_vocab[token]
+            tokens_list.append(num_token)
+        else:
+            pass
+        #num_token = features_vocab[token] if token in features_vocab.get_stoi() else None#else '<oov>'
+        #tokens_list.append(num_token)
+    return tokens_list
 
 class nextWord_LSTM(nn.Module):
     def __init__(self, features_vocab_total_words, target_vocab_total_words, embedding_dim, hidden_dim):
@@ -345,20 +369,7 @@ if __name__ == '__main__':
     print(f'Test K-Accuracy: {accuracy * 100:.2f}%')
     mlflow.log_metric('test_k_accuracy_same_corpus', accuracy)
 
-    #input_test = [['Daniel is',5],['stand', 5], ['deep learning is', 5], ['data cleaning', 4], ['6 ways', 4], ['you did a', 2]]
-    input_test = [['Daniel is', 9]]
 
-    outputs_model = use_model(input_test)
-    print(outputs_model)
-
-
-    input_test = [['Dominik is', 9]]
-    input_test2 = [['Daniel is', 9]]
-
-    outputs_model = use_model(input_test)
-    print(outputs_model)
-    outputs_model = use_model(input_test2)
-    print(outputs_model)
 
     mlflow.log_metric('test_k_accuracy_similar_corpus', evaluate_model_on_corpus(data_path_similar, model, tokenizer, features_vocab, target_vocab))
     mlflow.log_metric('test_k_accuracy_different_corpus', evaluate_model_on_corpus(data_path_not_similar, model, tokenizer, features_vocab, target_vocab))

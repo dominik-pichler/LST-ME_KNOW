@@ -1,8 +1,9 @@
 artifact_uri: mlflow-artifacts:/0/2ee27b0b19ca4c718684473a70f6cbc4/artifacts
+deleted_time: 1720646989751
 end_time: 1720625833536
 entry_point_name: ''
 experiment_id: '0'
-lifecycle_stage: active
+lifecycle_stage: deleted
 run_id: 2ee27b0b19ca4c718684473a70f6cbc4
 run_name: mysterious-ox-607
 run_uuid: 2ee27b0b19ca4c718684473a70f6cbc4
