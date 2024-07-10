@@ -34,7 +34,7 @@ ___
 Just run:  
 
 ```
-sh runh.sh
+sh run.sh
 ```
 
 ### Docker
