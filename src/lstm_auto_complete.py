@@ -16,9 +16,8 @@ from torch.utils.data import TensorDataset, DataLoader, random_split
 from torch.nn.functional import one_hot
 import torch.nn as nn
 import torch.optim as optim
-import re
+import re, os, argparse
 import matplotlib.pyplot as plt
-
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -155,6 +154,35 @@ def calculate_topk_accuracy(model, data_loader, k=3):
     return accuracy
 
 
+"""
+input: path for folder with stored checkpoints
+"""
+def find_latest_checkpoint_path(checkpoint_path_dir):
+    checkpoint_files = [f for f in os.listdir(checkpoint_path_dir) if f.startswith('checkpoint')]
+    if not checkpoint_files:
+        return None, 0
+
+    epochs = [int(re.search(r'epoch_(\d+)', f).group(1)) for f in checkpoint_files]
+    latest_epoch = max(epochs)
+    latest_checkpoint = f"checkpoint_epoch_{latest_epoch}.pt"
+
+    return os.path.join(checkpoint_path_dir, latest_checkpoint)
+
+
+"""
+returns parameters from command line with set default parameters
+"""
+def get_params():
+
+    parser = argparse.ArgumentParser(description="Train and evaluate LSTM model")
+    parser.add_argument('--checkpoint', default='false', choices=['true', 'false'], help='Run from latest checkpoint')
+    parser.add_argument('--checkpoint_path', default='../checkpoints', help='Define checkpoint path')
+    parser.add_argument('--lr', default=0.0009, help='Learning rate: Hyperparameter')
+    parser.add_argument('--epochs', default=10, help='Epochs: Hyperparameter')
+    parser.add_argument('--hidden_dimensions', default=200, help='Hidden dimensions: Hyperparameter')
+    return parser.parse_args()
+
+
 class nextWord_LSTM(nn.Module):
     def __init__(self, features_vocab_total_words, target_vocab_total_words, embedding_dim, hidden_dim):
         super(nextWord_LSTM, self).__init__()
@@ -172,14 +200,12 @@ class nextWord_LSTM(nn.Module):
         return output
 
 
-
-
 if __name__ == '__main__':
     df = load_text()
     tokenizer = get_tokenizer('basic_english')
     tokenized_sentences = [tokenizer(title) for title in df]
 
-
+    args = get_params()
 
     features_vocab = torchtext.vocab.build_vocab_from_iterator(
         tokenized_sentences,
@@ -248,8 +274,8 @@ if __name__ == '__main__':
     test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
 
     embedding_dim = longest_sequence_feature
-    hidden_dim = 200
-    epochs = 50
+    hidden_dim = args.hidden_dimensions
+    epochs = args.epochs
 
     model = nextWord_LSTM(features_vocab_total_words,
                     target_vocab_total_words,
@@ -258,9 +284,21 @@ if __name__ == '__main__':
 
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.0009)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+
+    # load latest checkpoint if desired
+    if(args.checkpoint):
+        checkpoint_path = find_latest_checkpoint_path(args.checkpoint_path)
+        print(f"Loading latest checkpoint: {checkpoint_path}")
+        checkpoint = torch.load(checkpoint_path)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        start_epoch = checkpoint['epoch']
+    else:
+        start_epoch = 0
 
     device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
+    print(f"Running on device: {device}")
     model.to(device)
 
 
@@ -268,7 +306,7 @@ if __name__ == '__main__':
     all_losses = []
 
 
-    for epoch in range(epochs):
+    for epoch in range(start_epoch, args.epoch):
         model.train()
         for batch_X, batch_y in train_loader:
             batch_X, batch_y = batch_X.to(device), batch_y.to(device)
@@ -284,7 +322,14 @@ if __name__ == '__main__':
             all_accuracies.append(accuracy)
             all_losses.append(loss.item())
 
-
+            #save checkpoint
+            checkpoint_path = os.path.join(args.checkpoint_path, f"checkpoint_epoch_{epoch+1}.pt")
+            torch.save({
+                'epoch': epoch + 1,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+            }, checkpoint_path)
+            print(f"Checkpoint saved at {checkpoint_path}")
 
 
     epoch_list = [i for i in range(1, epochs, 5)]
@@ -304,4 +349,4 @@ if __name__ == '__main__':
     axes[1].grid(True)
 
     plt.tight_layout()
-    plt.savefig("Accuracy_Loss_Graph.png")
+    plt.savefig("../out/Accuracy_Loss_Graph.png")
