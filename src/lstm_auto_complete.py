@@ -27,7 +27,7 @@ seed = 42
 torch.manual_seed(seed)
 np.random.seed(seed)
 
-data_path = Path('../data/The_critique_of_pure_reason_full.txt')
+data_path = Path('../data/The_critique_of_pure_reason_short.txt')
 
 def load_text():
     with open(data_path, 'r') as file:
@@ -48,21 +48,8 @@ def load_text():
     # Create a DataFrame from the list of sentences
     sentences = cleaned_text.split('.')
     df_sentences = pd.DataFrame(sentences, columns=["sentence"])
-    return df_sentences
+    return df_sentences['sentence']
 
-
-def tokenizer(df_sentences):
-    # Access the 'sentence' column from the DataFrame
-    sentences = df_sentences['sentence'].tolist()
-
-    # Initialize tokenizer
-    basic_english_tokenizer = get_tokenizer('basic_english')
-
-    # Tokenize each sentence
-    tokenized_sentences = [basic_english_tokenizer(sentence) for sentence in sentences]
-    print(len(tokenized_sentences))
-
-    return tokenized_sentences
 
 
 
@@ -189,22 +176,27 @@ class nextWord_LSTM(nn.Module):
 
 if __name__ == '__main__':
     df = load_text()
-    tokenized_sentences = tokenizer(df)
+    tokenizer = get_tokenizer('basic_english')
+    tokenized_sentences = [tokenizer(title) for title in df]
 
-    features_vocab, target_vocab = vocab_builder(tokenized_sentences)
-    features_vocab_total_words = len(features_vocab)
-    target_vocab_total_words = len(target_vocab)
 
-    print(f'Total number of words in features vocabulary: {features_vocab_total_words}')
-    print(f'Total number of words in target vocabulary: {target_vocab_total_words}')
-    print('-'*30)
-    print('Word -> ID')
-    print('<pad> -> '+ str(features_vocab['<pad>']))
-    print('<oov> -> '+ str(features_vocab['<oov>']))
+    # We assumed that by default LSTM does not like out of vocuabluary, hence, the text vocaulary needs to be predefined.
+    features_vocab = torchtext.vocab.build_vocab_from_iterator(
+        tokenized_sentences,
+        min_freq=2,
+        specials=['<pad>', '<oov>'],
+        special_first=True
+    )
+    target_vocab = torchtext.vocab.build_vocab_from_iterator(
+        tokenized_sentences,
+        min_freq=2
+    )
 
+
+    # An n-gram is built of size len(sentence)
     ngrams_list = []
     for tokenized_sentence in tokenized_sentences:
-        ngrams_list.extend(make_ngrams(tokenized_sentences))
+        ngrams_list.extend(make_ngrams(tokenized_sentence))
     print(len(ngrams_list))
 
 
@@ -213,14 +205,18 @@ if __name__ == '__main__':
         ngrams_list_oov.append(add_random_oov_tokens(ngram))
     print(any('<oov>' in ngram for ngram in ngrams_list_oov))
 
+
+    # Translate numberics
     input_sequences = [text_to_numerical_sequence(sequence) for sequence in ngrams_list_oov if
                        text_to_numerical_sequence(sequence)]
 
     print(f'Total input sequences: {len(input_sequences)}')
     print(input_sequences[7:9])
 
+    features_vocab_total_words = len(features_vocab)
+    target_vocab_total_words = len(target_vocab)
 
-    # Getting faetues and target
+    # Getting features and target
     X = [sequence[:-1] for sequence in input_sequences]
     y = [sequence[-1] for sequence in input_sequences]
     len(X[0]), y[0]
