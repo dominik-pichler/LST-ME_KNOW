@@ -178,7 +178,7 @@ def get_params():
     parser.add_argument('--checkpoint', default='false', choices=['true', 'false'], help='Run from latest checkpoint')
     parser.add_argument('--checkpoint_path', default='../checkpoints', help='Define checkpoint path')
     parser.add_argument('--lr', default=0.0009, help='Learning rate: Hyperparameter')
-    parser.add_argument('--epochs', default=50, help='Epochs: Hyperparameter')
+    parser.add_argument('--epochs', default=50, help='Epochs')
     parser.add_argument('--hidden_dimensions', default=200, help='Hidden dimensions: Hyperparameter')
     return parser.parse_args()
 
