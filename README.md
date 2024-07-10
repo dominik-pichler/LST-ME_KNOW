@@ -24,7 +24,7 @@
  ```
 
 
-# Next Word Predictor
+# L(ets) S(how) T(he) .... -  Next Word Predictor
 This is a tool to train and evaluate an `LSTM` Model for next word prediction.
 For help, just run
 ```
