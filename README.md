@@ -30,7 +30,11 @@ ___
 
 ## How to run
 
-### Raw
+### Raw (Mac Only)
+**Requirements:**
+- Python 3.12
+- Pip
+
 Just run:  
 
 ```

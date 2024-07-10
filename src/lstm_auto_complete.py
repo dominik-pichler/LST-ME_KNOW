@@ -287,7 +287,7 @@ if __name__ == '__main__':
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
     # load latest checkpoint if desired
-    if(args.checkpoint == 'false'):
+    if(args.checkpoint):
         checkpoint_path = find_latest_checkpoint_path(args.checkpoint_path)
         print(f"Loading latest checkpoint: {checkpoint_path}")
         checkpoint = torch.load(checkpoint_path)
