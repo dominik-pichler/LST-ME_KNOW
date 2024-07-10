@@ -15,6 +15,7 @@ accelerate = "^0.32.1"
 demoji = "^1.1.0"
 matplotlib = "^3.9.1"
 torchtext = "^0.18.0"
+mlflow = "^2.14.2"
 
 
 [build-system]

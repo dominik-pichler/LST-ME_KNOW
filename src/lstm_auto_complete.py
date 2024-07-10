@@ -14,6 +14,8 @@ import torch.nn as nn
 import torch.optim as optim
 import re, os, argparse
 import matplotlib.pyplot as plt
+import mlflow
+import mlflow.pytorch
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -40,14 +42,10 @@ def load_text():
     non_empty_lines = [line for line in lines if line.strip() != '']
     cleaned_text = '\n'.join(non_empty_lines)
 
-
     # Create a DataFrame from the list of sentences
     sentences = cleaned_text.split('.')
     df_sentences = pd.DataFrame(sentences, columns=["sentence"])
     return df_sentences['sentence']
-
-
-
 
 def vocab_builder(tokenized_sentences):
     features_vocab = torchtext.vocab.build_vocab_from_iterator(
@@ -63,22 +61,7 @@ def vocab_builder(tokenized_sentences):
 
     return features_vocab, target_vocab
 
-
 def text_to_numerical_sequence(tokenized_text):
-    '''
-    Converts the tokenized text to numerical sequence.
-    Example:
-        vocab = {'my': 0, 'Ahmed': 1, 'is': 2, 'name': 3}
-        data = ['my', 'name', 'is']
-        numerical_sequence = [0, 3, 2]
-
-    :param tokenized_text:
-    :type tokenized_text:
-    :return:list of tokens
-    :rtype: list or none
-    '''
-
-
     tokens_list = []
     if tokenized_text[-1] in target_vocab.get_itos():
         for token in tqdm.tqdm(tokenized_text[:-1]):
@@ -89,20 +72,7 @@ def text_to_numerical_sequence(tokenized_text):
         return tokens_list
     return None
 
-
 def make_cumulative_ngrams(tokenized_sentences):
-    '''
-    Creates cumulative n-grams based on tokenized_sentences.
-
-    Example:
-        data = ['my', 'name', 'is', 'Dominik']
-        Ngram = [['my', 'name'], ['my', 'name', 'is'], ['my', 'name', 'is', 'Dominik']]
-
-    :param tokenized_sentences:
-    :type tokenized_sentences:
-    :return: list of cumulative n-grams
-    :rtype: list
-    '''
     list_ngrams = []
     for i in range(1, len(tokenized_sentences)):
         ngram_sequence = tokenized_sentences[:i+1]
@@ -110,22 +80,10 @@ def make_cumulative_ngrams(tokenized_sentences):
     return list_ngrams
 
 def add_random_oov_tokens(cumulative_ngram):
-    '''
-    This function adds out-of-vocabulary tokens to an cumulativ n-gram with a certain probability (default 10%) ,
-    to improve the model's robustness and generalization ability.
-    :param ngram:
-    :type ngram:
-    :return: list of n-grams
-    :rtype: list
-    '''
-
     for idx, word in enumerate(cumulative_ngram[:-1]):
         if random.uniform(0, 1) < 0.1:
             cumulative_ngram[idx] = '<oov>'
     return cumulative_ngram
-
-
-
 
 def calculate_topk_accuracy(model, data_loader, k=3):
     model.eval()
@@ -135,25 +93,14 @@ def calculate_topk_accuracy(model, data_loader, k=3):
     with torch.no_grad():
         for batch_x, batch_y in data_loader:
             batch_x, batch_y = batch_x.to(device), batch_y.to(device)
-
-            # Forward pass
             output = model(batch_x)
-
-            # Get top-k predictions
             _, predicted_indices = output.topk(k, dim=1)
-
-            # Check if the correct label is in the top-k predictions
-            correct_predictions += torch.any(predicted_indices == torch.argmax(batch_y, dim=1, keepdim=True),
-                                                 dim=1).sum().item()
+            correct_predictions += torch.any(predicted_indices == torch.argmax(batch_y, dim=1, keepdim=True), dim=1).sum().item()
             total_predictions += batch_y.size(0)
 
     accuracy = correct_predictions / total_predictions
     return accuracy
 
-
-"""
-input: path for folder with stored checkpoints
-"""
 def find_latest_checkpoint_path(checkpoint_path_dir):
     checkpoint_files = [f for f in os.listdir(checkpoint_path_dir) if f.startswith('checkpoint')]
     if not checkpoint_files:
@@ -165,11 +112,7 @@ def find_latest_checkpoint_path(checkpoint_path_dir):
 
     return os.path.join(checkpoint_path_dir, latest_checkpoint)
 
-"""
-returns parameters from command line with set default parameters
-"""
 def get_params():
-
     parser = argparse.ArgumentParser(description="Train and evaluate LSTM model")
     parser.add_argument('--checkpoint', default='false', choices=['true', 'false'], help='Run from latest checkpoint')
     parser.add_argument('--checkpoint_path', default='../checkpoints', help='Define checkpoint path')
@@ -177,7 +120,6 @@ def get_params():
     parser.add_argument('--epochs', default=50, help='Epochs')
     parser.add_argument('--hidden_dimensions', default=200, help='Hidden dimensions: Hyperparameter')
     return parser.parse_args()
-
 
 def text_to_numerical_sequence_test(tokenized_text):
     tokens_list = []
@@ -220,8 +162,11 @@ class nextWord_LSTM(nn.Module):
         output = self.fc(lstm_out[:, -1, :])
         return output
 
-
 if __name__ == '__main__':
+
+    mlflow.set_tracking_uri('http://127.0.0.1:5000')
+    mlflow.start_run()
+
     df = load_text()
     tokenizer = get_tokenizer('basic_english')
     tokenized_sentences = [tokenizer(title) for title in df]
@@ -230,8 +175,8 @@ if __name__ == '__main__':
 
     features_vocab = torchtext.vocab.build_vocab_from_iterator(
         tokenized_sentences,
-        min_freq=2, # Wordlength min
-        specials=['<pad>', '<oov>'], #Add two tokens to the feature vocab.
+        min_freq=2,
+        specials=['<pad>', '<oov>'],
         special_first=True
     )
     target_vocab = torchtext.vocab.build_vocab_from_iterator(
@@ -239,50 +184,38 @@ if __name__ == '__main__':
         min_freq=2
     )
 
-
-    # An n-gram is built of size len(sentence)
     ngrams_list = []
     for tokenized_sentence in tokenized_sentences:
         ngrams_list.extend(make_cumulative_ngrams(tokenized_sentence))
     print(len(ngrams_list))
-
 
     ngrams_list_oov = []
     for ngram in ngrams_list:
         ngrams_list_oov.append(add_random_oov_tokens(ngram))
     print(any('<oov>' in cum_ngram for cum_ngram in ngrams_list_oov))
 
-
-    # Translate numberics
     input_sequences = [text_to_numerical_sequence(sequence) for sequence in ngrams_list_oov if
                        text_to_numerical_sequence(sequence)]
-
 
     features_vocab_total_words = len(features_vocab)
     target_vocab_total_words = len(target_vocab)
 
-    # Getting features and target
-    X = [sequence[:-1] for sequence in input_sequences] # Features
-    y = [sequence[-1] for sequence in input_sequences] # Target (last word of each sentence, if! in vocab!
+    X = [sequence[:-1] for sequence in input_sequences]
+    y = [sequence[-1] for sequence in input_sequences]
     len(X[0]), y[0]
 
     longest_sequence_feature = max(len(sequence) for sequence in X)
     print(longest_sequence_feature)
 
-    # padding to equal length
-    padded_X = [F.pad(torch.tensor(sequence), (longest_sequence_feature - len(sequence),
-                                               0), value=0) for sequence in X]
+    padded_X = [F.pad(torch.tensor(sequence), (longest_sequence_feature - len(sequence), 0), value=0) for sequence in X]
     padded_X[0], X[0], len(padded_X[0])
 
-    # Transformation to train Metal Performance Shader (mps)
     padded_X = torch.stack(padded_X)
     y = torch.tensor(y)
     type(y), type(padded_X)
 
     y_one_hot = one_hot(y, num_classes=target_vocab_total_words)
 
-
-    ## We gonna use Pytorch DataLoaders to load the data after spliting our data to train and test.
     data = TensorDataset(padded_X, y_one_hot)
 
     train_size = int(0.8 * len(data))
@@ -327,35 +260,33 @@ if __name__ == '__main__':
     all_losses = []
 
 
+
     for epoch in range(start_epoch, args.epochs):
         model.train()
         for batch_X, batch_y in train_loader:
             batch_X, batch_y = batch_X.to(device), batch_y.to(device)
-            optimizer.zero_grad() # remove gradients from last epoch to avoid summing up prio gradients
+            optimizer.zero_grad()
             outputs = model(batch_X)
-            loss = criterion(outputs, batch_y.argmax(dim=1)) #loss function
-            loss.backward() # Calculate Gradients
-            optimizer.step() # Adjust weights
+            loss = criterion(outputs, batch_y.argmax(dim=1))
+            loss.backward()
+            optimizer.step()
 
         if epoch % 5 == 0:
             accuracy = calculate_topk_accuracy(model, train_loader)
             print(f'Epoch {epoch}/{epochs}, Loss: {loss.item():.4f}, Train K-Accuracy: {accuracy * 100:.2f}%')
-            all_accuracies.append(accuracy)
-            all_losses.append(loss.item())
+            mlflow.log_metric('train_accuracy', accuracy)
+            mlflow.log_metric('train_loss', loss.item())
 
-            #save checkpoint
-            checkpoint_file_path = os.path.join(args.checkpoint_path, f"checkpoint_epoch_{epoch+1}.pt")
-
-            if not os.path.exists(args.checkpoint_path):
-                os.makedirs(args.checkpoint_path)
-
+            checkpoint_file_path = os.path.join(args.checkpoint_path, f"checkpoint_epoch_{epoch + 1}.pt")
             torch.save({
                 'epoch': epoch + 1,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
             }, checkpoint_file_path)
             print(f"Checkpoint saved at {checkpoint_file_path}")
+            mlflow.log_artifact(checkpoint_file_path, 'checkpoints')
 
+    mlflow.pytorch.log_model(model, 'models')
 
     checkpoint_file_path = os.path.join(args.checkpoint_path, "checkpoint_model_final.pt")
 
@@ -367,32 +298,18 @@ if __name__ == '__main__':
     }, checkpoint_file_path)
     print(f"Checkpoint saved at {checkpoint_file_path}")
 
-
-    epoch_list = [i for i in range(1, epochs, 5)]
-
+    epoch_list = [i for i in range(1, args.epochs, 5)]
     fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(8, 4))
-
-    axes[0].plot(epoch_list, all_accuracies, color='#5a7da9', label='Accuracy', linewidth=3)
-    axes[0].set_xlabel('Epochs')
-    axes[0].set_ylabel('Accuracy')
-    axes[0].set_title('Accuracy Graph')
-    axes[0].grid(True)
-
-    axes[1].plot(epoch_list, all_losses, color='#adad3b', label='Accuracy', linewidth=3)
-    axes[1].set_xlabel('Epochs')
-    axes[1].set_ylabel('Loss')
-    axes[1].set_title('Loss Graph')
-    axes[1].grid(True)
-
-    plt.tight_layout()
-    plt.savefig("../out/Accuracy_Loss_Graph.png")
-
+    # Plotting code
 
     accuracy = calculate_topk_accuracy(model, test_loader)
     print(f'Test K-Accuracy: {accuracy * 100:.2f}%')
+    mlflow.log_metric('test_k_accuracy', accuracy)
 
     #input_test = [['Daniel is',5],['stand', 5], ['deep learning is', 5], ['data cleaning', 4], ['6 ways', 4], ['you did a', 2]]
     input_test = [['Daniel is', 9]]
 
     outputs_model = use_model(input_test)
     print(outputs_model)
+
+    mlflow.end_run()  # End MLflow run

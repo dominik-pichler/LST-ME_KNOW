@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/0/2ee27b0b19ca4c718684473a70f6cbc4/artifacts
+end_time: 1720625833536
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 2ee27b0b19ca4c718684473a70f6cbc4
+run_name: mysterious-ox-607
+run_uuid: 2ee27b0b19ca4c718684473a70f6cbc4
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1720625757882
+status: 3
+tags: []
+user_id: dominikpichler

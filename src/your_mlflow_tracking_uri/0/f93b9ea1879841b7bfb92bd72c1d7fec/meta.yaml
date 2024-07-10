@@ -1,0 +1,15 @@
+artifact_uri: /Users/dominikpichler/Documents/Git/LST-ME_KNOW/src/your_mlflow_tracking_uri/0/f93b9ea1879841b7bfb92bd72c1d7fec/artifacts
+end_time: 1720625114209
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: f93b9ea1879841b7bfb92bd72c1d7fec
+run_name: classy-dolphin-244
+run_uuid: f93b9ea1879841b7bfb92bd72c1d7fec
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1720625113622
+status: 3
+tags: []
+user_id: dominikpichler
