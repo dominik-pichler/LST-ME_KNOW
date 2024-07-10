@@ -93,9 +93,10 @@ def text_to_numerical_sequence(tokenized_text):
         return tokens_list
     return None
 
-def make_ngrams(tokenized_sentences):
+
+def make_cumulative_ngrams(tokenized_sentences):
     '''
-    Creates n-grams based on tokenized_sentences.
+    Creates cumulative n-grams based on tokenized_sentences.
 
     Example:
         data = ['my', 'name', 'is', 'Ahmed']
@@ -112,11 +113,10 @@ def make_ngrams(tokenized_sentences):
         list_ngrams.append(ngram_sequence)
     return list_ngrams
 
-def add_random_oov_tokens(ngram):
+def add_random_oov_tokens(cumulative_ngram):
     '''
-    This function simulates adding out-of-vocabulary tokens to an n-gram with a certain probability.
-    It could be used, for example, in language modeling or text generation tasks to simulate the presence of unknown
-    words in the training data, which helps improve the model's robustness and generalization ability.
+    This function adds out-of-vocabulary tokens to an cumulativ n-gram with a certain probability (default 10%) ,
+    to improve the model's robustness and generalization ability.
     :param ngram:
     :type ngram:
     :return:
@@ -180,11 +180,11 @@ if __name__ == '__main__':
     tokenized_sentences = [tokenizer(title) for title in df]
 
 
-    # We assumed that by default LSTM does not like out of vocuabluary, hence, the text vocaulary needs to be predefined.
+
     features_vocab = torchtext.vocab.build_vocab_from_iterator(
         tokenized_sentences,
-        min_freq=2,
-        specials=['<pad>', '<oov>'],
+        min_freq=2, # Wordlength min
+        specials=['<pad>', '<oov>'], #Add two tokens to the feature vocab.
         special_first=True
     )
     target_vocab = torchtext.vocab.build_vocab_from_iterator(
@@ -196,38 +196,38 @@ if __name__ == '__main__':
     # An n-gram is built of size len(sentence)
     ngrams_list = []
     for tokenized_sentence in tokenized_sentences:
-        ngrams_list.extend(make_ngrams(tokenized_sentence))
+        ngrams_list.extend(make_cumulative_ngrams(tokenized_sentence))
     print(len(ngrams_list))
 
 
     ngrams_list_oov = []
     for ngram in ngrams_list:
         ngrams_list_oov.append(add_random_oov_tokens(ngram))
-    print(any('<oov>' in ngram for ngram in ngrams_list_oov))
+    print(any('<oov>' in cum_ngram for cum_ngram in ngrams_list_oov))
 
 
     # Translate numberics
     input_sequences = [text_to_numerical_sequence(sequence) for sequence in ngrams_list_oov if
                        text_to_numerical_sequence(sequence)]
 
-    print(f'Total input sequences: {len(input_sequences)}')
-    print(input_sequences[7:9])
 
     features_vocab_total_words = len(features_vocab)
     target_vocab_total_words = len(target_vocab)
 
     # Getting features and target
-    X = [sequence[:-1] for sequence in input_sequences]
-    y = [sequence[-1] for sequence in input_sequences]
+    X = [sequence[:-1] for sequence in input_sequences] # Features
+    y = [sequence[-1] for sequence in input_sequences] # Target (last word of each sentence, if! in vocab!
     len(X[0]), y[0]
 
     longest_sequence_feature = max(len(sequence) for sequence in X)
     print(longest_sequence_feature)
 
+    # padding to equal length
     padded_X = [F.pad(torch.tensor(sequence), (longest_sequence_feature - len(sequence),
                                                0), value=0) for sequence in X]
     padded_X[0], X[0], len(padded_X[0])
 
+    # Transformation to train Metal Performance Shader (mps)
     padded_X = torch.stack(padded_X)
     y = torch.tensor(y)
     type(y), type(padded_X)
@@ -236,7 +236,6 @@ if __name__ == '__main__':
 
 
     ## We gonna use Pytorch DataLoaders to load the data after spliting our data to train and test.
-
     data = TensorDataset(padded_X, y_one_hot)
 
     train_size = int(0.8 * len(data))
@@ -264,23 +263,29 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
     model.to(device)
 
+
     all_accuracies = []
     all_losses = []
+
+
     for epoch in range(epochs):
         model.train()
         for batch_X, batch_y in train_loader:
             batch_X, batch_y = batch_X.to(device), batch_y.to(device)
-            optimizer.zero_grad()
+            optimizer.zero_grad() # remove gradients from last epoch to avoid summing up prio gradients
             outputs = model(batch_X)
-            loss = criterion(outputs, batch_y.argmax(dim=1))
-            loss.backward()
-            optimizer.step()
+            loss = criterion(outputs, batch_y.argmax(dim=1)) #loss function
+            loss.backward() # Calculate Gradients
+            optimizer.step() # Adjust weights
 
         if epoch % 5 == 0:
             accuracy = calculate_topk_accuracy(model, train_loader)
             print(f'Epoch {epoch}/{epochs}, Loss: {loss.item():.4f}, Train K-Accuracy: {accuracy * 100:.2f}%')
             all_accuracies.append(accuracy)
             all_losses.append(loss.item())
+
+
+
 
     epoch_list = [i for i in range(1, epochs, 5)]
 
@@ -299,4 +304,4 @@ if __name__ == '__main__':
     axes[1].grid(True)
 
     plt.tight_layout()
-    plt.show()
+    plt.savefig("Accuracy_Loss_Graph.png")
