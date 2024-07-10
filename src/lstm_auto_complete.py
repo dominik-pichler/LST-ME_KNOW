@@ -26,7 +26,7 @@ seed = 42
 torch.manual_seed(seed)
 np.random.seed(seed)
 
-data_path = Path('../data/The_critique_of_pure_reason_short.txt')
+data_path = Path('../data/The_critique_of_pure_reason_full.txt')
 
 def load_text():
     with open(data_path, 'r') as file:
@@ -178,10 +178,35 @@ def get_params():
     parser.add_argument('--checkpoint', default='false', choices=['true', 'false'], help='Run from latest checkpoint')
     parser.add_argument('--checkpoint_path', default='../checkpoints', help='Define checkpoint path')
     parser.add_argument('--lr', default=0.0009, help='Learning rate: Hyperparameter')
-    parser.add_argument('--epochs', default=10, help='Epochs: Hyperparameter')
+    parser.add_argument('--epochs', default=50, help='Epochs: Hyperparameter')
     parser.add_argument('--hidden_dimensions', default=200, help='Hidden dimensions: Hyperparameter')
     return parser.parse_args()
 
+
+def text_to_numerical_sequence_test(tokenized_text):
+    tokens_list = []
+    for token in tokenized_text:
+        num_token = features_vocab[token] if token in features_vocab.get_itos() else features_vocab['<oov>']
+        tokens_list.append(num_token)
+    return tokens_list
+
+def use_model(input_list):
+    model.eval()
+    output_list = []
+    for data in input_list:
+        sentence = data[0]
+        num_words = data[1]
+        for i in range(num_words):
+            output_of_model = []
+            tokenized_input_test = tokenizer(sentence)
+            tokenized_sequence_input_test = text_to_numerical_sequence_test(tokenized_input_test)
+            padded_tokenized_sequence_input_test = F.pad(torch.tensor(tokenized_sequence_input_test),
+                                                         (longest_sequence_feature - len(tokenized_sequence_input_test)-1, 0),
+                                                         value=0)
+            output_test_walking = torch.argmax(model(padded_tokenized_sequence_input_test.unsqueeze(0)))
+            sentence = sentence + ' ' + target_vocab.lookup_token(output_test_walking.item())
+        output_list.append(sentence)
+    return output_list
 
 class nextWord_LSTM(nn.Module):
     def __init__(self, features_vocab_total_words, target_vocab_total_words, embedding_dim, hidden_dim):
@@ -287,7 +312,7 @@ if __name__ == '__main__':
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
     # load latest checkpoint if desired
-    if(args.checkpoint):
+    if(args.checkpoint == 'true'):
         checkpoint_path = find_latest_checkpoint_path(args.checkpoint_path)
         print(f"Loading latest checkpoint: {checkpoint_path}")
         checkpoint = torch.load(checkpoint_path)
@@ -306,7 +331,7 @@ if __name__ == '__main__':
     all_losses = []
 
 
-    for epoch in range(start_epoch, args.epoch):
+    for epoch in range(start_epoch, args.epochs):
         model.train()
         for batch_X, batch_y in train_loader:
             batch_X, batch_y = batch_X.to(device), batch_y.to(device)
@@ -354,3 +379,13 @@ if __name__ == '__main__':
 
     plt.tight_layout()
     plt.savefig("../out/Accuracy_Loss_Graph.png")
+
+
+    accuracy = calculate_topk_accuracy(model, test_loader)
+    print(f'Test K-Accuracy: {accuracy * 100:.2f}%')
+
+    #input_test = [['Daniel is',5],['stand', 5], ['deep learning is', 5], ['data cleaning', 4], ['6 ways', 4], ['you did a', 2]]
+    input_test = [['Daniel is', 9]]
+
+    outputs_model = use_model(input_test)
+    print(outputs_model)
