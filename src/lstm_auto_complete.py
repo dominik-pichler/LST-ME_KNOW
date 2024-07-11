@@ -165,7 +165,7 @@ def evaluate_model_on_corpus(data_path, model, tokenizer, features_vocab, target
         ngrams_list.extend(make_cumulative_ngrams(tokenized_sentence))
 
     # Convert to numerical sequences using the training vocabulary
-    input_sequences = [text_to_numerical_sequence_test_big_bro(sequence, features_vocab, target_vocab) for sequence in ngrams_list if text_to_numerical_sequence_test_big_bro(sequence, features_vocab, target_vocab)]
+    input_sequences = [text_to_numerical_sequence_test_big_bro(sequence, features_vocab, target_vocab) for sequence in ngrams_list if sequence]
 
     X = [sequence[:-1] for sequence in input_sequences]
     y = [sequence[-1] for sequence in input_sequences]
@@ -183,8 +183,8 @@ def evaluate_model_on_corpus(data_path, model, tokenizer, features_vocab, target
 
     # Ensure class values are within num_classes
     if max_class_value >= num_classes:
-        print(y.tolist())
-        print(target_vocab)
+        print("Class values:", y.tolist())
+        print("Target vocab size:", len(target_vocab))
         raise ValueError(f"Class value {max_class_value} exceeds number of classes {num_classes}")
 
     y_one_hot = one_hot(y, num_classes=num_classes)
@@ -196,18 +196,18 @@ def evaluate_model_on_corpus(data_path, model, tokenizer, features_vocab, target
     print(f'Test K-Accuracy for {data_path.name}: {accuracy * 100:.2f}%')
     return accuracy
 
-# Convert to numerical sequences using the training vocabulary
+
 def text_to_numerical_sequence_test_big_bro(tokenized_text, features_vocab, target_vocab):
+    target_vocab = features_vocab
     tokens_list = []
     for token in tokenized_text:
         if token in target_vocab.get_stoi():
             num_token = target_vocab[token]
-            tokens_list.append(num_token)
         else:
-            pass
-        #num_token = features_vocab[token] if token in features_vocab.get_stoi() else None#else '<oov>'
-        #tokens_list.append(num_token)
+            num_token = features_vocab['<oov>']
+        tokens_list.append(num_token)
     return tokens_list
+
 
 class nextWord_LSTM(nn.Module):
     def __init__(self, features_vocab_total_words, target_vocab_total_words, embedding_dim, hidden_dim):
@@ -369,9 +369,9 @@ if __name__ == '__main__':
     print(f'Test K-Accuracy: {accuracy * 100:.2f}%')
     mlflow.log_metric('test_k_accuracy_same_corpus', accuracy)
 
-
-
-    mlflow.log_metric('test_k_accuracy_similar_corpus', evaluate_model_on_corpus(data_path_similar, model, tokenizer, features_vocab, target_vocab))
-    mlflow.log_metric('test_k_accuracy_different_corpus', evaluate_model_on_corpus(data_path_not_similar, model, tokenizer, features_vocab, target_vocab))
+    mlflow.log_metric('test_k_accuracy_similar_corpus',
+                      evaluate_model_on_corpus(data_path_similar, model, tokenizer, features_vocab, target_vocab))
+    mlflow.log_metric('test_k_accuracy_different_corpus',
+                      evaluate_model_on_corpus(data_path_not_similar, model, tokenizer, features_vocab, target_vocab))
 
     mlflow.end_run()  # End MLflow run
